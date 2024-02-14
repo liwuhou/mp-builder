@@ -56,7 +56,7 @@ export enum ConsoleType {
   warn = 'warn',
 }
 
-function getPrintHead(type: ConsoleType): string {
+export function getPrintHead(type: ConsoleType): string {
   switch (type) {
     case ConsoleType.success:
       return chalk.bgGreen.black.bold(' SUCCESS ')

@@ -1,12 +1,14 @@
-import inquirer from 'inquirer'
+import readline from 'node:readline'
 import ci from 'miniprogram-ci'
 import type { Project, IUploadOptions } from 'miniprogram-ci'
 import {
   Console,
+  ConsoleType,
   checkVersionValid,
   generateNextVersion,
   getDefaultVersionFromInput,
   getPackageJson,
+  getPrintHead,
   getProjectJson,
 } from './util'
 import path from 'node:path'
@@ -69,17 +71,39 @@ export default class Builder {
   async preview(compileSetting: CompileSetting) {
     if (!this.hasBuildNpm) {
       await this.buildNpm()
+      console.log('\n')
     }
 
-    const result = await ci.preview({
-      project: this.mpProject,
-      desc: this.desc,
-      version: this.version,
-      setting: this.transformProjectConfig(compileSetting),
-      qrcodeFormat: 'terminal',
-      qrcodeOutputDest: path.resolve(this.projectPath, './cache/'),
-      onProgressUpdate: (info) => Console.info(typeof info === 'string' ? info : info?.message),
-    })
+    try {
+      const result = await ci.preview({
+        project: this.mpProject,
+        desc: this.desc,
+        version: this.version,
+        setting: this.transformProjectConfig(compileSetting),
+        qrcodeFormat: 'terminal',
+        qrcodeOutputDest: path.resolve(this.projectPath, './cache/'),
+        allowIgnoreUnusedFiles: true,
+        bigPackageSizeSupport: true,
+        useCOS: false,
+        threads: 3,
+        onProgressUpdate: (info) => {
+          const message = typeof info === 'string' ? info : info?.message
+          if (message) {
+            readline.clearLine(process.stdout, 0)
+            readline.cursorTo(process.stdout, 0)
+            process.stdout.write(`${getPrintHead(ConsoleType.info)} ${message}`)
+          }
+        },
+      })
+      // TODO: success
+      console.log(result)
+    } catch (e: any) {
+      if (e.code === 20003) {
+        Console.error(
+          'Invalid ip, please check the white list in mp server. reference: https://developers.weixin.qq.com/miniprogram/dev/devtools/ci.html'
+        )
+      }
+    }
   }
 
   private transformProjectConfig(rewriteSetting: CompileSetting): CompileSetting {
