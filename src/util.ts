@@ -35,8 +35,14 @@ export function getPackageJson(projectPath: string): PackageJsonInfo {
   return JSON.parse(readFileSync(packageJsonPath, { encoding: 'utf-8' }))
 }
 
+export type PackNpmRelationInfo = { packageJsonPath: string; miniprogramNpmDistDir: string }
+export type OriginProjectSetting = {
+  packNpmManually?: boolean
+  packNpmRelationList?: Array<PackNpmRelationInfo>
+}
+
 export type ProjectInfo = {
-  setting?: CompileSetting
+  setting?: CompileSetting & OriginProjectSetting
 }
 export function getProjectJson(projectPath: string): Record<string, any> & ProjectInfo {
   const projectJsonPath = path.resolve(projectPath, './project.config.json')

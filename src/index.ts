@@ -1,9 +1,11 @@
+import physicalCpuCount from 'physical-cpu-count'
 import readline from 'node:readline'
-import ci from 'miniprogram-ci'
+import ci, { packNpm } from 'miniprogram-ci'
 import type { Project, IUploadOptions } from 'miniprogram-ci'
 import {
   Console,
   ConsoleType,
+  PackNpmRelationInfo,
   checkVersionValid,
   generateNextVersion,
   getDefaultVersionFromInput,
@@ -22,6 +24,8 @@ export interface BuildOption extends ProjectOption {
   version?: string
   desc?: string
   needBuildNpm?: boolean
+  threads?: number
+  packNpmRelationInfo?: PackNpmRelationInfo
 }
 
 export default class Builder {
@@ -30,6 +34,8 @@ export default class Builder {
   private version: string
   private projectPath: string
   private hasBuildNpm: boolean
+  private threads: number
+  private packNpmRelationInfo?: PackNpmRelationInfo
   constructor(option: BuildOption) {
     const {
       projectPath = '.',
@@ -38,13 +44,17 @@ export default class Builder {
       version = generateNextVersion(getPackageJson(projectPath)?.version),
       needBuildNpm = true,
       desc = '',
+      threads = physicalCpuCount ?? 2,
+      packNpmRelationInfo,
       ...ciOption
     } = option
 
     this.desc = desc
     this.version = version
+    this.threads = threads
     this.projectPath = projectPath
     this.hasBuildNpm = !needBuildNpm
+    this.packNpmRelationInfo = packNpmRelationInfo
     this.mpProject = new ci.Project({
       type,
       ignores,
@@ -53,19 +63,41 @@ export default class Builder {
     })
   }
 
-  async buildNpm() {
-    return new Promise((resolve, reject) => {
-      ci.packNpm(this.mpProject, {
-        ignores: ['pack_npm_ignore_list'],
-        reporter: (info) => {
-          // clean some cache files
-          Console.success(`Build WeChat NPM done, It takes ${info.pack_time}ms.🍻`)
+  private getProjectSetting() {
+    return getProjectJson(this.projectPath)?.setting ?? {}
+  }
 
-          resolve(info)
-          this.hasBuildNpm = true
-        },
+  get isPackNpmManually() {
+    const { packNpmManually = false, packNpmRelationList = {} } = this.getProjectSetting()
+    return packNpmManually
+  }
+
+  async buildNpm() {
+    const { packNpmManually = false, packNpmRelationList = [] } = this.getProjectSetting()
+
+    if (!packNpmManually) {
+      return new Promise((resolve, reject) => {
+        ci.packNpm(this.mpProject, {
+          ignores: ['pack_npm_ignore_list'],
+          reporter: (info) => {
+            // clean some cache files
+            Console.success(`Build WeChat NPM done, It takes ${info.pack_time}ms.🍻`)
+
+            resolve(info)
+            this.hasBuildNpm = true
+          },
+        })
       })
-    })
+    } else {
+      // handle pack npm manually case
+      let start = Date.now()
+      const result = await ci.packNpmManually({
+        ignores: ['pack_npm_ignore_list'],
+        ...packNpmRelationList[0],
+        ...this.packNpmRelationInfo,
+      })
+      Console.success(`Build WeChat NPM done, It takes ${Date.now() - start}ms.🍻`)
+    }
   }
 
   async preview(compileSetting: CompileSetting) {
@@ -75,7 +107,7 @@ export default class Builder {
     }
 
     try {
-      const result = await ci.preview({
+      const { subPackageInfo, pluginInfo } = await ci.preview({
         project: this.mpProject,
         desc: this.desc,
         version: this.version,
@@ -85,7 +117,7 @@ export default class Builder {
         allowIgnoreUnusedFiles: true,
         bigPackageSizeSupport: true,
         useCOS: false,
-        threads: 3,
+        threads: physicalCpuCount ?? 2,
         onProgressUpdate: (info) => {
           const message = typeof info === 'string' ? info : info?.message
           if (message) {
@@ -96,7 +128,7 @@ export default class Builder {
         },
       })
       // TODO: success
-      console.log(result)
+      Console.success('Preview sucess, scan above qr code preview. 🎊')
     } catch (e: any) {
       if (e.code === 20003) {
         Console.error(
@@ -105,6 +137,8 @@ export default class Builder {
       }
     }
   }
+
+  async upload(compileSetting: CompileSetting) {}
 
   private transformProjectConfig(rewriteSetting: CompileSetting): CompileSetting {
     const { setting = {} } = getProjectJson(this.projectPath)

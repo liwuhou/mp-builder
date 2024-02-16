@@ -6,7 +6,7 @@ settings:
 
 dependencies:
   chalk:
-    specifier: ^4
+    specifier: ^4.1.2
     version: 4.1.2
   inquirer:
     specifier: ^8.2.6
@@ -14,6 +14,9 @@ dependencies:
   miniprogram-ci:
     specifier: ^1.9.10
     version: 1.9.10
+  physical-cpu-count:
+    specifier: ^2.0.0
+    version: 2.0.0
   semver:
     specifier: ^7.6.0
     version: 7.6.0
@@ -25,6 +28,9 @@ devDependencies:
   '@types/node':
     specifier: ^20.11.17
     version: 20.11.17
+  '@types/physical-cpu-count':
+    specifier: ^2.0.2
+    version: 2.0.2
   '@types/semver':
     specifier: ^7.5.7
     version: 7.5.7
@@ -2263,6 +2269,10 @@ packages:
     resolution: {integrity: sha512-QmgQZGWu1Yw9TDyAP9ZzpFJKynYNeOvwMJmaxABfieQoVoiVOS6MN1WSpqpRcbeA5+RW82kraAVxCCJg+780Qw==}
     dependencies:
       undici-types: 5.26.5
+    dev: true
+
+  /@types/physical-cpu-count@2.0.2:
+    resolution: {integrity: sha512-dWrdOZd9fy8HGz77lN+yX3hBAsSDDSizGD5Ho/SNDUmm2hQlxmCR3rQbULOwV8+83RHiy8icF4D3urQSMy2Vaw==}
     dev: true
 
   /@types/semver@7.5.7:
@@ -5233,6 +5243,10 @@ packages:
 
   /phin@2.9.3:
     resolution: {integrity: sha512-CzFr90qM24ju5f88quFC/6qohjC144rehe5n6DH900lgXmUe86+xCKc10ev56gRKC4/BkHUoG4uSiQgBiIXwDA==}
+    dev: false
+
+  /physical-cpu-count@2.0.0:
+    resolution: {integrity: sha512-rxJOljMuWtYlvREBmd6TZYanfcPhNUKtGDZBjBBS8WG1dpN2iwPsRJZgQqN/OtJuiQckdRFOfzogqJClTrsi7g==}
     dev: false
 
   /picocolors@1.0.0:
