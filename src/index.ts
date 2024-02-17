@@ -138,7 +138,30 @@ export default class Builder {
     }
   }
 
-  async upload(compileSetting: CompileSetting) {}
+  async upload(compileSetting: CompileSetting) {
+    try {
+      const result = await ci.upload({
+        project: this.mpProject,
+        desc: this.desc,
+        version: this.version,
+        setting: this.transformProjectConfig(compileSetting),
+        allowIgnoreUnusedFiles: true,
+        useCOS: false,
+        threads: physicalCpuCount ?? 2,
+        onProgressUpdate: (info) => {
+          const message = typeof info === 'string' ? info : info?.message
+          if (message) {
+            readline.clearLine(process.stdout, 0)
+            readline.cursorTo(process.stdout, 0)
+            process.stdout.write(`${getPrintHead(ConsoleType.info)} ${message}`)
+          }
+        },
+      })
+      // Upload success
+    } catch (e) {
+      console.log('🤔 ~ Builder ~ upload ~ e:', e)
+    }
+  }
 
   private transformProjectConfig(rewriteSetting: CompileSetting): CompileSetting {
     const { setting = {} } = getProjectJson(this.projectPath)
